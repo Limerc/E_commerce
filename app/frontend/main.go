@@ -10,6 +10,7 @@ import (
 	// "github.com/Limerc/E_commerce/gomall/app/frontend/biz/dal/redis"
 	"github.com/Limerc/E_commerce/gomall/app/frontend/biz/router"
 	"github.com/Limerc/E_commerce/gomall/app/frontend/conf"
+	"github.com/Limerc/E_commerce/gomall/app/frontend/middleware"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -22,8 +23,8 @@ import (
 	hertzlogrus "github.com/hertz-contrib/logger/logrus"
 	"github.com/hertz-contrib/pprof"
 	"github.com/hertz-contrib/sessions"
-	"github.com/joho/godotenv"
 	"github.com/hertz-contrib/sessions/redis"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -46,9 +47,16 @@ func main() {
 	h.LoadHTMLGlob("template/*")   // 渲染页面
 	h.Static("/static", "./")
 	
+	h.GET("/about", func(c context.Context, ctx *app.RequestContext) {
+		ctx.HTML(consts.StatusOK, "about", utils.H{"Title": "About"})
+	})
 
 	h.GET("/sign-in", func(c context.Context, ctx *app.RequestContext) {
-		ctx.HTML(consts.StatusOK, "sign-in", utils.H{"Title": "Sign In"})
+		data := utils.H{
+			"Title": "Sign In",
+			"Next": ctx.Query("next"),
+		}
+		ctx.HTML(consts.StatusOK, "sign-in", data)
 	})
 	h.GET("/sign-up", func(c context.Context, ctx *app.RequestContext) {
 		ctx.HTML(consts.StatusOK, "sign-up", utils.H{"Title": "Sign Up"})
@@ -99,4 +107,6 @@ func registerMiddleware(h *server.Hertz) {
 
 	// cores
 	h.Use(cors.Default())
+
+	middleware.Register(h)
 }
