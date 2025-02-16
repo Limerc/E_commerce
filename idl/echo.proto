@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package pbapi;
+
+option go_package = "/pbapi";    // 必须以斜杠开头
+
+message Request {
+    string message = 1;   //类型 名称 = 序列号
+}
+
+message Response {
+    string message = 1;   //序列号从1开始，定义后不允许修改
+}
+
+service EchoService {
+    rpc Echo(Request) returns  (Response) {}
+}
