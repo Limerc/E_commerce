@@ -8,8 +8,10 @@ import (
 	"time"
 
 	// "github.com/Limerc/E_commerce/gomall/app/frontend/biz/dal/redis"
+	// "github.com/Limerc/E_commerce/gomall/app/frontend/biz/dal"
 	"github.com/Limerc/E_commerce/gomall/app/frontend/biz/router"
 	"github.com/Limerc/E_commerce/gomall/app/frontend/conf"
+	"github.com/Limerc/E_commerce/gomall/app/frontend/infra/rpc"
 	"github.com/Limerc/E_commerce/gomall/app/frontend/middleware"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
@@ -33,6 +35,7 @@ func main() {
 	_ = godotenv.Load()
 	// init dal
 	// dal.Init()
+	rpc.Init()
 	address := conf.GetConf().Hertz.Address
 	h := server.New(server.WithHostPorts(address))
 
