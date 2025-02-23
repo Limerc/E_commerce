@@ -26,7 +26,7 @@ type ProductQuery struct {
 }
 
 func (p ProductQuery) GetById(productId int) (product Product, err error) {
-	err = p.db.WithContext(p.ctx).Model(&Product{}).First(&product, productId).error
+	err = p.db.WithContext(p.ctx).Model(&Product{}).First(&product, productId).Error
 	return
 }
 

@@ -4,7 +4,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{$.Title}} | Limerc Shop</title>
+    {{ if $.redirect }}
+        <meta http-equiv="refresh" content="5;url={{ $.redirect }}"/>
+    {{ end}}
+    <title>Limerc Shop</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" 
         integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" 
@@ -28,22 +31,21 @@
                         Categories
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#">Garage Kits</a></li>
-                        <li><a class="dropdown-item" href="#">Pendant</a></li>
-                        <li><a class="dropdown-item" href="#">Phone Shell</a></li>
+                        <li><a class="dropdown-item" href="/category/Garage_Kits">Garage Kits</a></li>
+                        <li><a class="dropdown-item" href="/category/Pendant">Pendant</a></li>
+                        <li><a class="dropdown-item" href="/category/Phone_Shell">Phone Shell</a></li>
                     </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/about">About</a>
                     </li>
                 </ul>
-                <form class="d-flex" role="search">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                <form class="d-flex ms-auto" role="search" action="/search" method="get">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Search"
+                           aria-label="Search" value="{{ .q }}">
                     <button class="btn btn-outline-success" type="submit">Search</button>
                 </form>
-                <div class="ms-3">
-                    <i class="fa-solid fa-cart-shopping fa-xl"></i>
-                </div>
+                {{ template "cart-num" . }}
                 {{ if .user_id }}
                 <div class="dropdown">
                     <div class="ms-3 dropdown-toggle" data-bs-toggle="dropdown">
@@ -51,7 +53,7 @@
                         <span>Limerc</span>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#"><i class="fa-solid fa-box me-2"></i>Order Center</a></li>
+                        <li><a class="dropdown-item" href="/order"><i class="fa-solid fa-box me-2"></i>Order Center</a></li>
                         <li>
                             <form action="/auth/logout" method="post">
                                 <button class="dropdown-item" type="submit"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</button>
@@ -68,8 +70,16 @@
             </div>
         </div>
     </nav>
-    </header>
 
+    <div class="bg-primary text-center text-white pt-1 pb-1">This website is hosted for demo purposes only. It is not an actual shop.</div>
+    {{ if .error }}
+        <div class="alert alert-danger text-center" role="alert">{{ .error }}</div>
+     {{ end }}
+    {{ if .warning }}
+        <div class="alert alert-warning text-center" role="alert">{{ .warning }}</div>
+    {{ end }}
+
+    </header>
     <main style="min-height: calc(80vh);">
         <div class="container-fluid py-3">
 {{end}}
