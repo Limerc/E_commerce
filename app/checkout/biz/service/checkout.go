@@ -4,14 +4,18 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/Limerc/E_commerce/gomall/app/checkout/infra/mq"
 	"github.com/Limerc/E_commerce/gomall/app/checkout/infra/rpc"
 	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/cart"
 	checkout "github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/checkout"
+	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/email"
 	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/order"
 	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/payment"
 	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/product"
 	"github.com/cloudwego/kitex/pkg/kerrors"
 	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/golang/protobuf/proto"
+	nats "github.com/nats-io/nats.go"
 )
 
 type CheckoutService struct {
@@ -92,7 +96,13 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 		return nil, kerrors.NewGRPCBizStatusError(5004002, "cart is empty")
 	}
 
-	if orderResp.Order != nil && orderResp.Order != nil {
+	// 清空购物车
+	orderResult , err := rpc.CartClient.EmptyCart(s.ctx, &cart.EmptyCartReq{UserId: req.UserId})
+	if err != nil {
+		klog.Error(err.Error())
+	}
+
+	if orderResult != nil && orderResp.Order != nil {
 		orderId = orderResp.Order.OrderId
 	}
 
@@ -108,16 +118,32 @@ func (s *CheckoutService) Run(req *checkout.CheckoutReq) (resp *checkout.Checkou
 			CreditCardExpirationMonth: req.CreditCard.CreditCardExpirationMonth,
 		},
 	}
-	// 清空购物车
-	_, err = rpc.CartClient.EmptyCart(s.ctx, &cart.EmptyCartReq{UserId: req.UserId})
-	if err != nil {
-		klog.Error(err.Error())
-	}
+
+	// // 清空购物车
+	// _, err := rpc.CartClient.EmptyCart(s.ctx, &cart.EmptyCartReq{UserId: req.UserId})
+	// if err != nil {
+	// 	klog.Error(err.Error())
+	// }
+	
 	// 调用支付服务，扣款
 	paymentResult, err := rpc.PaymentClient.Charge(s.ctx, payReq)
 	if err != nil {
 		return nil, err
 	}
+
+	// 构建要生产的消息
+	data, _ := proto.Marshal(&email.EmailReq{
+		From:  "from@example.com",
+		To:    req.Email,
+		ContentType: "text/plain",
+		Subject: "订单支付成功",
+		Content: "订单支付成功，订单号：" + orderId,
+	})
+
+	msg := &nats.Msg{Subject:"email", Data:data}
+
+	_ = mq.Nc.PublishMsg(msg)
+
 	// 记录订单信息
 	klog.Info(paymentResult)
 

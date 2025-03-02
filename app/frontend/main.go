@@ -16,6 +16,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	// "github.com/cloudwego/hertz/pkg/app/server/registry"
 	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -27,17 +28,35 @@ import (
 	"github.com/hertz-contrib/sessions"
 	"github.com/hertz-contrib/sessions/redis"
 	"github.com/joho/godotenv"
+	prometheus "github.com/hertz-contrib/monitor-prometheus"
+	//"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	//serversuite "github.com/Limerc/E_commerce/gomall/common/serversuite"
+	frontendutils "github.com/Limerc/E_commerce/gomall/app/frontend/utils"
+	mtl "github.com/Limerc/E_commerce/gomall/common/mtl"
 )
 
+var (
+	ServiceName  = frontendutils.ServiceName
+	MetricsPort  = conf.GetConf().Hertz.MetricsPort
+	RegistryAddr = conf.GetConf().Hertz.RegistryAddr
+)
+	
 func main() {
 	_ = godotenv.Load()
 	// init dal
 	// dal.Init()
+	consul, registryInfo := mtl.InitMetric(ServiceName, MetricsPort, RegistryAddr)
+	defer consul.Deregister(registryInfo)
 	rpc.Init()
 	address := conf.GetConf().Hertz.Address
-	h := server.New(server.WithHostPorts(address))
+	h := server.New(server.WithHostPorts(address),
+		server.WithTracer(prometheus.NewServerTracer("", "", prometheus.WithDisableServer(true),
+			prometheus.WithRegistry(mtl.Registry),
+		)),
+	)
 
 	registerMiddleware(h)
 

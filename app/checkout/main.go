@@ -5,21 +5,30 @@ import (
 	"time"
 
 	"github.com/Limerc/E_commerce/gomall/app/checkout/conf"
+	"github.com/Limerc/E_commerce/gomall/app/checkout/infra/mq"
 	"github.com/Limerc/E_commerce/gomall/app/checkout/infra/rpc"
 	"github.com/Limerc/E_commerce/gomall/rpc_gen/kitex_gen/checkout/checkoutservice"
 	"github.com/cloudwego/kitex/pkg/klog"
-	"github.com/cloudwego/kitex/pkg/rpcinfo"
+	//"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	kitexlogrus "github.com/kitex-contrib/obs-opentelemetry/logging/logrus"
-	consul "github.com/kitex-contrib/registry-consul"
+	//consul "github.com/kitex-contrib/registry-consul"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	serversuite "github.com/Limerc/E_commerce/gomall/common/serversuite"
+	mtl "github.com/Limerc/E_commerce/gomall/common/mtl"
 )
 
+var (
+	ServiceName  = conf.GetConf().Kitex.Service
+	RegistryAddr = conf.GetConf().Registry.RegistryAddress[0]
+)
+	
 func main() {
 	opts := kitexInit()
+	mtl.InitMetric(ServiceName, conf.GetConf().Kitex.MetricsPort, RegistryAddr)
 	rpc.InitClient()
-
+	mq.Init()
 	svr := checkoutservice.NewServer(new(CheckoutServiceImpl), opts...)
 
 	err := svr.Run()
@@ -34,18 +43,21 @@ func kitexInit() (opts []server.Option) {
 	if err != nil {
 		panic(err)
 	}
-	opts = append(opts, server.WithServiceAddr(addr))
-
-	r, err := consul.NewConsulRegister(conf.GetConf().Registry.RegistryAddress[0])
-	if err != nil {
-		klog.Fatal(err)
-	}
-	opts = append(opts, server.WithServiceAddr(addr),server.WithRegistry(r))
-
-	// service info
-	opts = append(opts, server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
-		ServiceName: conf.GetConf().Kitex.Service,
+	opts = append(opts, server.WithServiceAddr(addr), server.WithSuite(serversuite.CommonServerSuite{
+		CurrentServiceName: ServiceName,
+		RegistryAddr:       RegistryAddr,
 	}))
+
+	// r, err := consul.NewConsulRegister(conf.GetConf().Registry.RegistryAddress[0])
+	// if err != nil {
+	// 	klog.Fatal(err)
+	// }
+	// opts = append(opts, server.WithServiceAddr(addr),server.WithRegistry(r))
+
+	// // service info
+	// opts = append(opts, server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{
+	// 	ServiceName: conf.GetConf().Kitex.Service,
+	// }))
 
 	// klog
 	logger := kitexlogrus.NewLogger()
