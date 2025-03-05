@@ -11,7 +11,9 @@ func TestSearchProducts_Run(t *testing.T) {
 	s := NewSearchProductsService(ctx)
 	// init req and assert value
 
-	req := &product.SearchProductsReq{}
+	req := &product.SearchProductsReq{
+		Query: "哪吒",
+	}
 	resp, err := s.Run(req)
 	t.Logf("err: %v", err)
 	t.Logf("resp: %v", resp)

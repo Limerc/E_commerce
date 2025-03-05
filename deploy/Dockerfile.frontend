@@ -1,0 +1,36 @@
+FROM golang:1.21 AS builder
+
+WORKDIR /usr/src/gomall
+
+# Set the environment variable(for China GOPROXY)
+ENV GOPROXY=https://goproxy.io,direct
+
+COPY app/frontend/go.mod app/frontend/go.sum ./app/frontend/
+COPY rpc_gen rpc_gen
+COPY common common
+
+# 下载依赖包
+RUN cd app/frontend/ && go mod download && go mod verify
+
+# 复制代码到容器中
+COPY app/frontend app/frontend
+
+# 构建可执行文件
+RUN cd app/frontend/ && CGO_ENABLED=0 go build -v -o /opt/gomall/frontend/server 
+
+FROM busybox
+
+COPY --from=builder /opt/gomall/frontend/server /opt/gomall/frontend/server 
+
+# 拷贝配置文件和静态资源文件到容器中
+COPY app/frontend/conf  /opt/gomall/frontend/conf
+COPY app/frontend/static  /opt/gomall/frontend/static
+COPY app/frontend/template /opt/gomall/frontend/template
+
+WORKDIR /opt/gomall/frontend
+
+# 声明运行端口
+EXPOSE 8080
+
+# 启动文件
+CMD ["./server"]

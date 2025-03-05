@@ -46,3 +46,10 @@ gen-email:
 	@cd app/email && cwgo server --type RPC --service email --module ${ROOT_MOD}/app/email --pass "-use ${ROOT_MOD}/rpc_gen/kitex_gen" -I ../../idl --idl ../../idl/email.proto
 	@cd rpc_gen && cwgo client --type RPC --service email --module ${ROOT_MOD}/rpc_gen --I ../idl --idl ../idl/email.proto
 
+.PHONY: build-frontend
+build-frontend:
+	sudo docker build -f ./deploy/Dockerfile.frontend -t frontend:${v} .
+
+.PHONY: build-svc
+build-svc:
+	sudo docker build -f ./deploy/Dockerfile.svc -t ${svc}:${v} --build-arg SVC=${svc} .

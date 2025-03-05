@@ -1,0 +1,36 @@
+FROM golang:1.23.6 AS builder
+
+ARG SVC
+
+WORKDIR /usr/src/gomall
+
+# Set the environment variable(for China GOPROXY)
+ENV GOPROXY=https://goproxy.io,direct
+
+COPY app/${SVC}/go.mod app/${SVC}/go.sum ./app/${SVC}/
+COPY rpc_gen rpc_gen
+COPY common common
+
+# 下载依赖包
+RUN cd common && go mod download && go mod verify
+RUN cd app/${SVC}/ && go mod download && go mod verify
+
+# 复制代码到容器中
+COPY app/${SVC} app/${SVC}
+
+# 构建可执行文件
+RUN cd app/${SVC}/ && CGO_ENABLED=0 go build -v -o /opt/gomall/${SVC}/server 
+
+FROM busybox
+
+ARG SVC
+
+COPY --from=builder /opt/gomall/${SVC}/server /opt/gomall/${SVC}/server 
+
+# 拷贝配置文件和静态资源文件到容器中
+COPY app/${SVC}/conf  /opt/gomall/${SVC}/conf
+
+WORKDIR /opt/gomall/${SVC}
+
+# 启动文件
+CMD ["./server"]
